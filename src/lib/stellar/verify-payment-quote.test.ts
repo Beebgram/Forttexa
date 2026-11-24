@@ -10,9 +10,11 @@ import {
 import { afterEach, describe, expect, it } from "vitest";
 
 import {
+  buildDecisionReceipt,
   buildPaymentQuoteFromDecision,
   isPaymentDecisionCurrent,
   normalizeAmountXLM,
+  validateDecisionReceipt,
   verifyPaymentAgainstQuote,
   verifySignedPaymentAgainstQuote,
 } from "@/lib/stellar/verify-payment-quote";
@@ -406,5 +408,57 @@ describe("verifySignedPaymentAgainstQuote", () => {
     );
 
     expect(result.ok).toBe(true);
+  });
+});
+
+describe("validateDecisionReceipt", () => {
+  it("rejects malformed or incomplete validation input", () => {
+    expect(validateDecisionReceipt(null).ok).toBe(false);
+    expect(validateDecisionReceipt({}).ok).toBe(false);
+    expect(
+      validateDecisionReceipt({
+        destination: "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF",
+        amountXLM: "1.0000000",
+      }).ok,
+    ).toBe(false);
+  });
+
+  it("accepts a well-formed decision receipt", () => {
+    const receipt = buildDecisionReceipt({
+      destination: "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF",
+      amountXLM: "1.0000000",
+      memo: "fortexa:test",
+    });
+    const result = validateDecisionReceipt(receipt);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.normalized.receiptHash).toBe(receipt.receiptHash);
+    }
+  });
+});
+
+describe("validateDecisionReceipt", () => {
+  it("rejects malformed or incomplete validation input", () => {
+    expect(validateDecisionReceipt(null).ok).toBe(false);
+    expect(validateDecisionReceipt({}).ok).toBe(false);
+    expect(
+      validateDecisionReceipt({
+        destination: "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF",
+        amountXLM: "1.0000000",
+      }).ok,
+    ).toBe(false);
+  });
+
+  it("accepts a well-formed decision receipt", () => {
+    const receipt = buildDecisionReceipt({
+      destination: "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF",
+      amountXLM: "1.0000000",
+      memo: "fortexa:test",
+    });
+    const result = validateDecisionReceipt(receipt);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.normalized.receiptHash).toBe(receipt.receiptHash);
+    }
   });
 });

@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { TransactionBuilder } from "@stellar/stellar-sdk";
+import { TransactionBuilder, type Operation } from "@stellar/stellar-sdk";
 
 import { requireAuth } from "@/lib/auth/require-auth";
 import { isLoginAuthorizationPayload } from "@/lib/auth/wallet-challenge";
@@ -97,18 +97,20 @@ const HORIZON_OP_ERRORS: Record<string, HorizonErrorContext> = {
   },
 };
 
+type DecodedTransaction = ReturnType<typeof TransactionBuilder.fromXDR>;
+type DecodedOperation = DecodedTransaction["operations"][number];
+
+function isPaymentOperation(
+  op: DecodedOperation,
+): op is Operation.Payment {
+  return op.type === "payment";
+}
+
 function verifySignedXdrMatchesDecisionReceipt(
   signedXdr: string,
-  receipt: {
-    destination: string;
-    amountXLM: string;
-    asset: string;
-    memo?: string;
-    network: string;
-    receiptHash?: string;
-  },
+  receipt: unknown,
 ) {
-  const validation = validateDecisionReceipt(receipt as any);
+  const validation = validateDecisionReceipt(receipt);
   if (!validation.ok) {
     return {
       ok: false,
@@ -119,7 +121,7 @@ function verifySignedXdrMatchesDecisionReceipt(
   }
 
   const { networkPassphrase } = assertStellarNetworkConfig();
-  let decoded: ReturnType<typeof TransactionBuilder.fromXDR>;
+  let decoded: DecodedTransaction;
 
   try {
     decoded = TransactionBuilder.fromXDR(signedXdr, networkPassphrase);
@@ -132,8 +134,8 @@ function verifySignedXdrMatchesDecisionReceipt(
     };
   }
 
-  const paymentOp = decoded.operations.find((op: any) => op.type === "payment");
-  if (!paymentOp || paymentOp.type !== "payment") {
+  const paymentOp = decoded.operations.find(isPaymentOperation);
+  if (!paymentOp) {
     return {
       ok: false,
       status: 403,
