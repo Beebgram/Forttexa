@@ -143,7 +143,10 @@ type Tree = { props?: Record<string, unknown> };
 
 function renderEditor() {
   hookIndex = 0;
-  return PolicyEditor() as unknown as Tree;
+  return PolicyEditor({
+    networkMatches: true,
+    networkFingerprint: "testnet",
+  }) as unknown as Tree;
 }
 
 function findByTestId(node: unknown, testId: string): Tree | undefined {

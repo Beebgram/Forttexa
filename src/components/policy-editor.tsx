@@ -113,6 +113,7 @@ export function PolicyEditor({
   const [rollbackPreview, setRollbackPreview] = useState<SimulationReport | null>(null);
   const [rollbackPreviewStatus, setRollbackPreviewStatus] = useState<string | null>(null);
   const [previewingRollback, setPreviewingRollback] = useState(false);
+  const [validationGate, setValidationGate] = useState<PolicyValidationGate>(INITIAL_POLICY_VALIDATION_GATE);
   const [serverNetworkMatches, setServerNetworkMatches] = useState<boolean | null>(null);
 
   const sensitivePayload = hasSensitiveField(policy);
@@ -223,6 +224,13 @@ export function PolicyEditor({
       setStatus("Policy is not loaded yet.");
       return;
     }
+
+    await postPolicyUpdate(buildDraftPolicy(policy), "Policy updated successfully.");
+  }
+
+  function resetActivationGate() {
+    setValidationGate(INITIAL_POLICY_VALIDATION_GATE);
+  }
 
   /**
    * POST the given document to /api/policy and apply the response.
@@ -892,6 +900,21 @@ export function PolicyEditor({
 
       <div className="flex gap-2">
         <Button onClick={savePolicy} disabled={saveDisabled}>Save Policy</Button>
+        <Button
+          data-testid="validate-draft-button"
+          variant="outline"
+          onClick={() => void validateDraft()}
+          disabled={loading || !policy}
+        >
+          Validate draft
+        </Button>
+        <Button
+          data-testid="activate-policy-button"
+          onClick={() => void handleActivate()}
+          disabled={!activateUnlocked}
+        >
+          Activate policy
+        </Button>
         <Button variant="outline" onClick={loadPolicy} disabled={loading}>Reload</Button>
         <Button variant="outline" onClick={loadHistory} disabled={loading}>Reload History</Button>
       </div>
