@@ -1,3 +1,4 @@
+import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
@@ -81,14 +82,14 @@ describe("resolveWalletCardState", () => {
 describe("WalletActionsPanel", () => {
   it("renders enabled pay and policy actions for a matching operator", () => {
     const html = renderToStaticMarkup(
-      <WalletActionsPanel
-        state={resolveWalletCardState({
+      createElement(WalletActionsPanel, {
+        state: resolveWalletCardState({
           authenticated: true,
           role: "operator",
           sessionWallet: SESSION_WALLET,
           connectedAccount: SESSION_WALLET,
-        })}
-      />,
+        }),
+      }),
     );
     expect(html).toContain('data-status="match"');
     expect(buttonDisabled(html, "pay")).toBe(false);
@@ -97,14 +98,14 @@ describe("WalletActionsPanel", () => {
 
   it("renders a mismatch state with pay and policy disabled", () => {
     const html = renderToStaticMarkup(
-      <WalletActionsPanel
-        state={resolveWalletCardState({
+      createElement(WalletActionsPanel, {
+        state: resolveWalletCardState({
           authenticated: true,
           role: "operator",
           sessionWallet: SESSION_WALLET,
           connectedAccount: OTHER_ACCOUNT,
-        })}
-      />,
+        }),
+      }),
     );
     expect(html).toContain('data-status="mismatch"');
     expect(html).toContain('role="alert"');
@@ -114,15 +115,15 @@ describe("WalletActionsPanel", () => {
 
   it("shows signed out after revoke with no action enabled", () => {
     const html = renderToStaticMarkup(
-      <WalletActionsPanel
-        state={resolveWalletCardState({
+      createElement(WalletActionsPanel, {
+        state: resolveWalletCardState({
           authenticated: true,
           revoked: true,
           role: "operator",
           sessionWallet: SESSION_WALLET,
           connectedAccount: SESSION_WALLET,
-        })}
-      />,
+        }),
+      }),
     );
     expect(html).toContain('data-status="signed_out"');
     expect(html).toContain("Signed out");
