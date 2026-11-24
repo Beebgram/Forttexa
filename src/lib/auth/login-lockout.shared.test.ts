@@ -39,33 +39,36 @@ describe("login lockout shared state", () => {
     process.env.FORTEXA_AUTH_MAX_ATTEMPTS = "2";
     process.env.FORTEXA_AUTH_LOCK_MINUTES = "1";
 
-    const module = await import("@/lib/auth/login-lockout");
-    await module.resetLoginLockoutStore();
+    const lockoutModule = await import("@/lib/auth/login-lockout");
+    await lockoutModule.resetLoginLockoutStore();
 
-    await module.registerLoginFailure("operator@fortexa.local", "10.9.0.1");
-    await module.registerLoginFailure("operator@fortexa.local", "10.9.0.2");
+    const userId = "wallet:GBXFXNDLV4LSWA4VB7YIL5GBD7BVNR22SGBTDKMO2SBZZHDXSKZYCP7L";
+    const ip = "10.9.0.1";
 
-    expect((await module.isLoginLocked("operator@fortexa.local", "10.9.0.3")).locked).toBe(true);
+    await lockoutModule.registerLoginFailure(userId, ip);
+    await lockoutModule.registerLoginFailure(userId, ip);
+
+    expect((await lockoutModule.isLoginLocked(userId, ip)).locked).toBe(true);
   });
 
   it("clears the lock only after the configured expiry using an injectable clock", async () => {
     process.env.FORTEXA_SHARED_STATE_PATH = sharedStatePath;
     process.env.FORTEXA_AUTH_MAX_ATTEMPTS = "1";
-    processNevv.FORTEXA_AUTH_LOCK_MINUTES = "1";
+    process.env.FORTEXA_AUTH_LOCK_MINUTES = "1";
 
-    const module = await import("@/lib/auth/login-lockout");
-    await module.resetLoginLockoutStore();
+    const lockoutModule = await import("@/lib/auth/login-lockout");
+    await lockoutModule.resetLoginLockoutStore();
 
     let now = new Date("2024-01-01T00:00:00Z");
-    module.setLoginLockoutClock(() => now);
+    lockoutModule.setLoginLockoutClock(() => now.getTime());
 
-    await module.registerLoginFailure("operator@fortexa.local", "10.9.0.1");
-    expect((await module.isLoginLocked("operator@fortexa.local", "10.9.0.1")).locked).toBe(true);
+    await lockoutModule.registerLoginFailure("operator@fortexa.local", "10.9.0.1");
+    expect((await lockoutModule.isLoginLocked("operator@fortexa.local", "10.9.0.1")).locked).toBe(true);
 
     now = new Date("2024-01-01T00:00:30Z");
-    expect((await module.isLoginLocked("operator@fortexa.local", "10.9.0.1")).locked).toBe(true);
+    expect((await lockoutModule.isLoginLocked("operator@fortexa.local", "10.9.0.1")).locked).toBe(true);
 
     now = new Date("2024-01-01T00:01:01Z");
-    expect((await module.isLoginLocked("operator@fortexa.local", "10.9.0.1")).locked).toBe(false);
+    expect((await lockoutModule.isLoginLocked("operator@fortexa.local", "10.9.0.1")).locked).toBe(false);
   });
 });
