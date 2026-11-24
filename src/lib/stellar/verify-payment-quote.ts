@@ -202,6 +202,36 @@ export function getQuoteExpiresAt(auditEntry: AuditEntry): string {
   return Number.isFinite(legacyExpiryMs) ? new Date(legacyExpiryMs).toISOString() : "";
 }
 
+export type ValidateDecisionReceiptResult =
+  | { ok: true; normalized: PaymentQuote }
+  | { ok: false; error: string; field?: PaymentQuoteField; status?: 400 | 403 };
+
+function isDecisionReceiptShape(value: unknown): value is PaymentQuote {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+  const candidate = value as Record<string, unknown>;
+  return (
+    typeof candidate.destination === "string" &&
+    (typeof candidate.amountXLM === "string" || typeof candidate.amountXLM === "number") &&
+    typeof candidate.asset === "string" &&
+    typeof candidate.memo === "string" &&
+    typeof candidate.network === "string"
+  );
+}
+
+export function validateDecisionReceipt(
+  receipt: unknown,
+): ValidateDecisionReceiptResult {
+  if (!isDecisionReceiptShape(receipt)) {
+    return {
+      ok: false,
+      status: 400,
+      error: "Payment decision receipt is missing required fields.",
+      field: "memo",
+    };
+  }
+
   try {
     const normalized = {
       destination: receipt.destination.trim().toUpperCase(),
@@ -221,7 +251,7 @@ export function getQuoteExpiresAt(auditEntry: AuditEntry): string {
         status: 403,
         error: "Payment decision receipt is corrupted or tampered.",
         field: "amountXLM",
-      } as any;
+      };
     }
 
     return {
@@ -234,7 +264,7 @@ export function getQuoteExpiresAt(auditEntry: AuditEntry): string {
       status: 400,
       error: PAYMENT_AMOUNT_ERROR,
       field: "amountXLM",
-    } as any;
+    };
   }
 }
 
